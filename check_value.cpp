@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <limits>
 
 #include "check_value.h"
 

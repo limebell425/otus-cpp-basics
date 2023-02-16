@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <ctime>
 #include "random_value.h"
 #include "check_value.h"
 #include "high_scores.h"
@@ -8,10 +9,10 @@
 inline bool isInteger(const std::string & s)
 {
     if (s.empty() || (s.size() > 9)){
-        return false; 
+         return false; 
     }
-    return std::all_of(s.begin(), s.end(), std::isdigit);
-
+    return std::all_of(s.begin(), s.end(), [](char c){return std::isdigit(c);});
+    
 }
 
 int main(int argc, char** argv){
