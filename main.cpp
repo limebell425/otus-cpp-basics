@@ -1,23 +1,17 @@
 #include <iostream>
 #include <vector>
 #include "statistics.h"
+#include <algorithm>
+#include <array>
 
-int main() {
-
-	const size_t statistics_count = 4;
-	IStatistics *statistics[statistics_count];
-
-	statistics[0] = new Min{};
-	statistics[1] = new Max{};
-	statistics[2] = new Mean{};
-	statistics[3] = new Std{};
-	
+int main()
+{
+	std::vector<double> sequence;
+	sequence.reserve(100);
 	std::cout << "Enter sequence" << std::endl;
-	double val = 0;
+	double val;
 	while (std::cin >> val) {
-		for (size_t i = 0; i < statistics_count; ++i) {
-			statistics[i]->update(val);
-		}
+		sequence.push_back(val);
 	}
 
 	// Handle invalid input data
@@ -26,22 +20,35 @@ int main() {
 		return 1;
 	}
 
-	if ((dynamic_cast<Std*>(statistics[3]))->get_seq_size() == 0){
+	if (sequence.size() == 0) {
 		std::cout << "Empty sequence" << std::endl;
-		for (size_t i = 0; i < statistics_count; ++i) {
-			delete statistics[i];
-		}
 		return 0;
 	}
 
-	// Print results if any
-	for (size_t i = 0; i < statistics_count; ++i) {
-		std::cout << statistics[i]->name() << " = " << statistics[i]->eval() << std::endl;
+	std::sort(
+		sequence.begin(), 
+		sequence.end(), 
+		[](const auto &lhs, const auto &rhs) {
+			return lhs < rhs; 
+		});
+	const size_t statistics_count = 6;
+	std::array<std::unique_ptr<IStatistics>, statistics_count> statistics = {
+		std::make_unique<Min>(),
+		std::make_unique<Max>(),
+		std::make_unique<Mean>(),
+		std::make_unique<Std>(sequence),
+		std::make_unique<Percentile>(90, sequence),
+		std::make_unique<Percentile>(95, sequence),
+	};
+
+	for (double val : sequence) {
+		for (const auto &statistic : statistics) {
+			statistic->update(val);
+		}
 	}
 
-	// Clear memory - delete all objects created by new
-	for (size_t i = 0; i < statistics_count; ++i) {
-		delete statistics[i];
+	for (const auto &statistic : statistics) {
+		std::cout << statistic->name() << " = " << statistic->eval() << std::endl;
 	}
 
 	return 0;
