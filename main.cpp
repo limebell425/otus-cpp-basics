@@ -3,15 +3,27 @@
 #include "statistics.h"
 #include <algorithm>
 #include <array>
+#include <memory>
+#include <exception>
 
 int main()
 {
-	std::vector<double> sequence;
-	sequence.reserve(100);
+	const size_t statistics_count = 6;
+	std::array<std::unique_ptr<IStatistics>, statistics_count> statistics = {
+	std::make_unique<Min>(),
+	std::make_unique<Max>(),
+	std::make_unique<Mean>(),
+	std::make_unique<Std>(),
+	std::make_unique<Percentile>(90),
+	std::make_unique<Percentile>(95),
+	};
+
 	std::cout << "Enter sequence" << std::endl;
-	double val;
+	double val = 0;
 	while (std::cin >> val) {
-		sequence.push_back(val);
+		for (size_t i = 0; i < statistics_count; ++i) {
+			statistics[i]->update(val);
+		}
 	}
 
 	// Handle invalid input data
@@ -20,35 +32,14 @@ int main()
 		return 1;
 	}
 
-	if (sequence.size() == 0) {
-		std::cout << "Empty sequence" << std::endl;
-		return 0;
-	}
-
-	std::sort(
-		sequence.begin(), 
-		sequence.end(), 
-		[](const auto &lhs, const auto &rhs) {
-			return lhs < rhs; 
-		});
-	const size_t statistics_count = 6;
-	std::array<std::unique_ptr<IStatistics>, statistics_count> statistics = {
-		std::make_unique<Min>(),
-		std::make_unique<Max>(),
-		std::make_unique<Mean>(),
-		std::make_unique<Std>(sequence),
-		std::make_unique<Percentile>(90, sequence),
-		std::make_unique<Percentile>(95, sequence),
-	};
-
-	for (double val : sequence) {
-		for (const auto &statistic : statistics) {
-			statistic->update(val);
-		}
-	}
-
 	for (const auto &statistic : statistics) {
-		std::cout << statistic->name() << " = " << statistic->eval() << std::endl;
+		try {
+			double result = statistic->eval();
+			std::cout << statistic->name() << " = " << result << std::endl;
+		}
+		catch(const std::exception &ex) {
+			std::cout << "Error " << statistic->name() << ": " << ex.what() << std::endl;  
+		}
 	}
 
 	return 0;

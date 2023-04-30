@@ -1,23 +1,24 @@
 #include "statistics.h"
 #include <limits>
 #include <cmath>
-#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <exception>
 
-
-Min::Min() 
-    : m_min{ std::numeric_limits<double>::max() }
-{}
 
 void Min::update(double next)
 {
-    if (next < m_min) {
+    if (!m_min || next < *m_min) {
         m_min = next;
     }
 }
 
 double Min::eval() const 
 {
-    return m_min;
+    if (!m_min){
+        throw std::exception("can't get min of empty sequence");
+    }
+    return *m_min;
 }
 
 const char *Min::name() const
@@ -25,20 +26,19 @@ const char *Min::name() const
     return "min";
 }
 
-Max::Max()
-    : m_max{ -std::numeric_limits<double>::max() }
-{}
-
 void Max::update(double next)
 {
-    if (next > m_max) {
+    if (!m_max || next > *m_max) {
         m_max = next;
     }  
 }
 
 double Max::eval() const 
 {
-    return m_max;
+    if (!m_max){
+        throw std::exception("can't get max of empty sequence");
+    }
+    return *m_max;
 }
 
 
@@ -60,6 +60,9 @@ void Mean::update(double next)
 
 double Mean::eval() const 
 {
+    if (data_size == 0){
+        throw std::exception("can't get mean of empty sequence");
+    }
     return sum/data_size;
 }
 
@@ -68,18 +71,21 @@ const char *Mean::name() const
     return "mean";
 }
 
-Std::Std(const std::vector<double> &data_) 
+Std::Std() 
     : sum{0}
-    , data{data_}
 {}
 
 void Std::update(double next)
 {
-    sum += next; 
+    sum += next;
+    data.push_back(next);
 }
 
 double Std::eval() const 
 {
+    if (data.empty()){
+        throw std::exception("can't get mean of empty sequence");
+    }
     double mean = sum/data.size();
     double sum_of_dev = 0;
     for (double i : data) {
@@ -93,19 +99,22 @@ const char *Std::name() const
     return "std";
 }
 
-Percentile::Percentile(int persent_, const std::vector<double> &data_)
+Percentile::Percentile(int persent_)
     : persent{persent_}
-    , data{data_}
+    , name_{"percentile" + std::to_string(persent_)}
 {}
 
-void Percentile::update(double)
+void Percentile::update(double next)
 {
-
+    data.insert(std::lower_bound(data.begin(), data.end(), next), next);
 }
 
 double Percentile::eval() const 
 {
-    if (persent == 100) {
+    if (data.empty()) {
+        throw std::exception("can't get percentile of empty sequence");
+    }
+    if ((persent == 100) || (data.size() ==  1)) {
         return data.back();
     }
     double ind = persent / 100.0 * (data.size() - 1);
@@ -115,5 +124,5 @@ double Percentile::eval() const
 
 const char *Percentile::name() const
 {
-    return "percentile";
+    return name_.c_str();
 }

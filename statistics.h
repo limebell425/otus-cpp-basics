@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <string>
+#include <optional>
 
 class IStatistics 
 {
@@ -13,25 +15,25 @@ public:
 class Min : public IStatistics 
 {
 public:
-	Min();
+	Min() = default;
 	void update(double next) override;
 	double eval() const override;
 	const char *name() const override;
 
 private:
-	double m_min;
+	std::optional<double> m_min;
 };
 
 class Max : public IStatistics 
 {
 public:
-	Max();
+	Max() = default;
 	void update(double next) override;
 	double eval() const override;
 	const char *name() const override;
 
 private:
-	double m_max;
+	std::optional<double> m_max;
 };
 
 class Mean : public IStatistics 
@@ -50,26 +52,27 @@ private:
 class Std : public IStatistics 
 {
 public:
-	Std(const std::vector<double> &data);
+	Std();
 	void update(double next) override;
 	double eval() const override;
 	const char *name() const override;
 
 private:
 	double sum;
-	const std::vector<double> &data;
+	std::vector<double> data;
 	
 };
 
 class Percentile : public IStatistics 
 {
 public:
-	Percentile(int persent, const std::vector<double> &data);
+	Percentile(int persent);
 	void update(double next) override;
 	double eval() const override;
 	const char *name() const override;
 
 private:
 	int persent;
-	const std::vector<double> &data;
+	std::vector<double> data;
+	std::string name_;
 };
