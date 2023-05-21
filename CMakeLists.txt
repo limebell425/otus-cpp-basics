@@ -5,6 +5,8 @@ project(containers)
 add_executable(containers 
     main.cpp
     MyVector.h
+    MyForwardList.h
+    MyList.h
 )
 set_target_properties(containers PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 
