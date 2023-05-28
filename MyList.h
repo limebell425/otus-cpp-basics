@@ -115,17 +115,19 @@ public:
         }
         bool empty();
         size_t size();
-        void push_back(const T &value);
-        void push_back(T &&value);
+        void push_back(const T &value); 
         void erase(const Iterator<T> &it);
-        void insert(const Iterator<T> &it, const T &value);
-        void insert(const Iterator<T> &it, T &&value);
         Iterator<T> begin() {return Iterator<T>{first.get()}; }
         Iterator<T> end() {return Iterator<T>{last}; }
         Iterator<T> begin() const {return Iterator<T>{first.get()}; }
         Iterator<T> end() const {return Iterator<T>{last}; }
         T &operator[](size_t index);
         const T &operator[](size_t) const;
+
+        template<typename U>
+        void push_back(U &&value);
+        template<typename U>
+        void insert(const Iterator<T> &it, U &&value);
        
     private:
         std::unique_ptr<Node> first;
@@ -145,30 +147,12 @@ size_t MyList<T>::size()
     return size_;
 }
 
-template <typename T>
-void MyList<T>::push_back(const T &value)
+template<typename T>
+template <typename U>
+void MyList<T>::push_back(U &&value)
 {
     ++size_;
-    std::unique_ptr<Node> node = std::make_unique<Node>(value);
-    if (empty())
-    {
-        first = std::move(node);
-        first->next = Node::create_fict(first.get());
-        last = first->next.get();
-        return;
-    }
-    Node *p = last->prev;
-    node->prev = p;
-    node->next = std::move(p->next);
-    p->next = std::move(node);
-    last->prev = p->next.get();
-}
-
-template <typename T>
-void MyList<T>::push_back(T &&value)
-{
-    ++size_;
-    std::unique_ptr<Node> node = std::make_unique<Node>(std::forward<T>(value));
+    std::unique_ptr<Node> node = std::make_unique<Node>(std::forward<U>(value));
     if (empty())
     {
         first = std::move(node);
@@ -224,39 +208,16 @@ void MyList<T>::erase(const Iterator<T> &it)
 }
 
 template <typename T>
-void MyList<T>::insert(const Iterator<T> &it, const T &value)
+template <typename U>
+void MyList<T>::insert(const Iterator<T> &it, U &&value)
 {
     if (empty())
     {
-        push_back(value);
+        push_back(std::forward<U>(value));
         return;
     }
     ++size_;
-    auto node = std::make_unique<Node>(value);
-    if (it == begin())
-    {
-        it.node->prev = node.get();
-        node->next = std::move(first);
-        first = std::move(node);
-        return;
-    }
-    Node *p = it.node->prev;
-    node->prev = p;
-    node->next = std::move(p->next);
-    p->next = std::move(node);
-    it.node->prev = p->next.get();
-}
-
-template <typename T>
-void MyList<T>::insert(const Iterator<T> &it, T &&value)
-{
-    if (empty())
-    {
-        push_back(std::forward<T>(value));
-        return;
-    }
-    ++size_;
-    auto node = std::make_unique<Node>(std::forward<T>(value));
+    auto node = std::make_unique<Node>(std::forward<U>(value));
     if (it == begin())
     {
         it.node->prev = node.get();

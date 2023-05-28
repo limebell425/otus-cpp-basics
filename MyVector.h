@@ -2,6 +2,7 @@
 #include <iterator>
 #include <cstddef>
 #include <utility>
+#include <algorithm>
 
 template<typename T>
 class MyVector
@@ -28,7 +29,7 @@ public:
         pointer operator->() const { return p; }
         Iterator& operator++() { ++p; return *this; }
         Iterator operator++(int) { Iterator old = *this; ++(*this); return old; }
-        Iterator& operator--() { --p; return *this }
+        Iterator& operator--() { --p; return *this; }
         Iterator operator--(int) { Iterator old = *this; --(*this); return old; }
         Iterator& operator+=(difference_type n) { p += n; return *this; }
         Iterator& operator-=(difference_type n) {  p -= n;  return *this; }
@@ -63,21 +64,18 @@ public:
     MyVector(int count);
     ~MyVector()
     {
-        delete memory;
+        delete[] memory;
     }
     
     MyVector& operator=(const MyVector &vec)
     {
-        if (this == &other)
+        if (this == &vec)
             return *this;
         size_ = vec.size_;
         capacity = vec.capacity;
-        delete memory;
+        delete[] memory;
         memory = new T[capacity];
-        for (size_t i = 0; i < size_; ++i)
-        {
-            memory[i] = vec.memory[i];
-        }
+        std::copy(vec.begin(), vec.end(), memory);
         return *this;
     }
 
@@ -88,7 +86,7 @@ public:
 
     MyVector& operator=(MyVector &&vec)
     {
-        if (this == &other)
+        if (this == &vec)
             return *this;
         size_ = std::exchange(vec.size_, 0);
         capacity = std::exchange(vec.capacity, 0);
@@ -107,15 +105,16 @@ public:
     Iterator<const T> end() const { return Iterator<const T>{memory + size_}; }
     Iterator<const T> cbegin() const { return Iterator<const T>{memory}; }
     Iterator<const T> cend() const { return Iterator<const T>{memory + size_}; }
-    void push_back(const T &value);
-    void push_back(T &&value);
     T &operator[](size_t index);
     const T &operator[](size_t index) const;
     int size();
-    void insert(const Iterator<T> &it, const T &value);
-    void insert(const Iterator<T> &it, T &&value);
     void erase(const Iterator<T> &it);
     void erase(const Iterator<T> &from, const Iterator<T> &to);
+
+    template<typename U>
+    void push_back(U &&value);
+    template<typename U>
+    void insert(const Iterator<T> &it, U &&value);
 
 private:
     int size_ = 0;
@@ -132,41 +131,21 @@ MyVector<T>::MyVector(int count)
 }
 
 template<typename T>
-void MyVector<T>::push_back(const T &value)
+template<typename U>
+void MyVector<T>::push_back(U &&value)
 {
-    ++size_;
-    if (size_ > capacity) {
-        capacity = size_ * size_modifier;
+    if (size_ >= capacity) {
+        capacity = (size_ + 1) * size_modifier;
         T *new_region = new T[capacity];
-        for (size_t i = 0; i < size_ - 1; ++i) {
-            new_region[i] = memory[i];
-        }
-        new_region[size_-1] = value;
-        delete memory;
+        std::move(begin(), end(), new_region);
+        new_region[size_] = std::forward<U>(value);
+        delete[] memory;
         memory = new_region;
     } 
     else {
-        memory[size_ - 1] = value;
+        memory[size_] = std::forward<U>(value);
     }
-}
-
-template<typename T>
-void MyVector<T>::push_back(T &&value)
-{
     ++size_;
-    if (size_ > capacity) {
-        capacity = size_ * size_modifier;
-        T *new_region = new T[capacity];
-        for (size_t i = 0; i < size_ - 1; ++i) {
-            new_region[i] = memory[i];
-        }
-        new_region[size_-1] = std::move(value);
-        delete memory;
-        memory = new_region;
-    } 
-    else {
-        memory[size_ - 1] = std::move(value);
-    }
 }
 
 template<typename T>
@@ -188,25 +167,19 @@ int MyVector<T>::size()
 }
 
 template<typename T>
-void MyVector<T>::insert(const Iterator<T> &it, const T &value)
+template<typename U>
+void MyVector<T>::insert(const Iterator<T> &it, U &&value)
 {
     ++size_;
     if (size_ > capacity)
     {
         capacity = size_ * size_modifier;
         T *new_region = new T[capacity];
-        T *j = new_region;  
-        int help = 0; 
-        for (T* i  = memory; i < it.p; ++i, ++j)
-        {
-            *j = *i;
-        }
-        *j++ = value;
-        for (T* i = it.p; i < memory + size_ - 1; ++i, ++j)
-        {
-            *j = *i;
-        }
-        delete memory;
+        std::move(begin(), it, new_region);
+        std::move(it, end(), new_region+(it-begin()) + 1);
+        auto idx = it - begin();
+        *(new_region + idx) = std::forward<U>(value);
+        delete[] memory;
         memory = new_region;
     }
     else
@@ -215,59 +188,20 @@ void MyVector<T>::insert(const Iterator<T> &it, const T &value)
         {
             *i = *(i - 1);
         }
-        *it.p = value;
-    }
-}
-
-template<typename T>
-void MyVector<T>::insert(const Iterator<T> &it, T &&value)
-{
-    ++size_;
-    if (size_ > capacity)
-    {
-        capacity = size_ * size_modifier;
-        T *new_region = new T[capacity];
-        T *j = new_region;  
-        int help = 0; 
-        for (T* i  = memory; i < it.p; ++i, ++j)
-        {
-            *j = *i;
-        }
-        *j++ = std::move(value);
-        for (T* i = it.p; i < memory + size_ - 1; ++i, ++j)
-        {
-            *j = *i;
-        }
-        delete memory;
-        memory = new_region;
-    }
-    else
-    {
-        for (T* i = memory + size_-1; i > it.p; --i)
-        {
-            *i = *(i - 1);
-        }
-        *it.p = std::move(value);
+        *it.p = std::forward<U>(value);
     }
 }
 
 template <typename T>
 void MyVector<T>::erase(const Iterator<T> &it)
 {
-    for (T *i = it.p; i < memory + size_ - 1; ++i)
-    {
-        *i = *(i + 1);
-    }
+    std::move(it + 1, end(), it);
     --size_;
 }
 
 template <typename T>
 void MyVector<T>::erase(const Iterator<T> &from, const Iterator<T> &to)
 {
-    T * to_ = memory + size_ - (to - from) - 1;
-    for (T *i = from.p; i < to_; ++i)
-    {
-        *i = *(i + (to - from));
-    } 
+    std::move(to, end(), from);
     size_ -= (to - from);
 }

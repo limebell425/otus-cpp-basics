@@ -103,18 +103,19 @@ public:
 
     bool empty() const;
     size_t size() const;
-    void push_back(const T &value);
-    void push_back(T &&value);
     void erase(const Iterator<T> &from, const Iterator<T> &to);
     void erase(const Iterator<T> &it);
-    void insert(const Iterator<T> &it, const T &value);
-    void insert(const Iterator<T> &it, T &&value);
     Iterator<T> begin() { return Iterator<T>{first.get()}; }
     Iterator<T> end() { return Iterator<T>{nullptr}; }
     Iterator<const T> begin() const { return Iterator<const T>{first.get()}; }
     Iterator<const T> end() const { return Iterator<const T>{nullptr}; }
     T &operator[](size_t index);   
     const T &operator[](size_t index) const;
+
+    template<typename U>
+    void push_back(U &&value);
+    template<typename U>
+    void insert(const Iterator<T> &it, U &&value);
 
 private:
     std::unique_ptr<ForwardNode> first;
@@ -134,28 +135,11 @@ size_t MyForwardList<T>::size() const
 }
 
 template<typename T>
-void MyForwardList<T>::push_back(const T &value)
+template<typename U>
+void MyForwardList<T>::push_back(U &&value)
 {
     ++size_;
-    std::unique_ptr<ForwardNode> node = std::make_unique<ForwardNode>(value);
-    if (empty())
-    {
-        first = std::move(node);
-        return;
-    }
-    ForwardNode *p = first.get();
-    while (p->next)
-    {
-        p = p->next.get(); 
-    }   
-    p->next = std::move(node);
-}
-
-template<typename T>
-void MyForwardList<T>::push_back(T &&value)
-{
-    ++size_;
-    std::unique_ptr<ForwardNode> node = std::make_unique<ForwardNode>(std::forward<T>(value));
+    std::unique_ptr<ForwardNode> node = std::make_unique<ForwardNode>(std::forward<U>(value));
     if (empty())
     {
         first = std::move(node);
@@ -195,7 +179,8 @@ void MyForwardList<T>::erase(const Iterator<T> &it)
         first = std::move(it.node->next);
         return;
     }
-    ForwardNode *p1 = first.get();
+   
+   ForwardNode *p1 = first.get();
     while (p1->next.get() != it.node)
     {
         p1 = p1->next.get();
@@ -240,12 +225,13 @@ void MyForwardList<T>::erase(const Iterator<T> &from, const Iterator<T> &to)
 }
 
 template<typename T>
-void MyForwardList<T>::insert(const Iterator<T> &it, const T &value)
+template<typename U>
+void MyForwardList<T>::insert(const Iterator<T> &it, U &&value)
 {
     ++size_;
     if (first.get() == it.node)
     {
-        auto node = std::make_unique<ForwardNode>(value, std::move(first));
+        auto node = std::make_unique<ForwardNode>(std::forward<U>(value), std::move(first));
         first = std::move(node);
         return;
     }
@@ -254,28 +240,7 @@ void MyForwardList<T>::insert(const Iterator<T> &it, const T &value)
     {
         p1 = p1->next.get();
     }
-    auto node = std::make_unique<ForwardNode>(value, std::move(p1->next));
-    p1->next = std::move(node);
-    
-}
-
-
-template<typename T>
-void MyForwardList<T>::insert(const Iterator<T> &it, T &&value)
-{
-    ++size_;
-    if (first.get() == it.node)
-    {
-        auto node = std::make_unique<ForwardNode>(std::forward<T>(value), std::move(first));
-        first = std::move(node);
-        return;
-    }
-    ForwardNode *p1 = first.get();
-    while (p1->next.get() != it.node)
-    {
-        p1 = p1->next.get();
-    }
-    auto node = std::make_unique<ForwardNode>(std::forward<T>(value), std::move(p1->next));
+    auto node = std::make_unique<ForwardNode>(std::forward<U>(value), std::move(p1->next));
     p1->next = std::move(node);
     
 }

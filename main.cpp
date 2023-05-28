@@ -6,6 +6,7 @@
 #include <string_view>
 #include <algorithm>
 
+
 template<typename T>
 void container_out(std::string_view message, const T &cont){
     std::cout << message << ": ";
@@ -37,6 +38,7 @@ void check_container(std::string_view name, T &cont)
     std::cout << name << "[7] = " << cont[7] << std::endl;
     std::cout << std::endl;
 }
+
 
 int main(){
     MyVector<int> vector;
