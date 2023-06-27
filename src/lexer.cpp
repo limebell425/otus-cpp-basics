@@ -2,6 +2,7 @@
 // Lexer implementation
 
 #include "lexer.hpp"
+#include <stdexcept>
 
 #include <cctype>
 
@@ -69,6 +70,8 @@ Lexer::Token Lexer::next_token() {
                 next_char();
                 break;
             }
+        default:
+            throw std::logic_error("Error: Wrong symbol");
         }
     }
 }

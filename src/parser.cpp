@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include <stdexcept>
 
 using Token = Lexer::Token;
 
@@ -25,8 +26,9 @@ ASTNode *Parser::expr() {
             }
             break;
         }
+        case Token::End: return root;
         default:
-            return root;
+            throw std::logic_error("Error: Need operator");
         }
     }
 }
@@ -68,7 +70,7 @@ ASTNode *Parser::prim() {
         node = new Variable(lexer_.get_name());
         break;
     default:
-        break;
+        throw std::logic_error("Error: Need number or value");
     }
     next_token();
     return node;
