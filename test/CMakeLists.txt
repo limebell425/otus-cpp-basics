@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(test)
+project(containers_tests)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -15,7 +15,8 @@ enable_testing()
 
 add_executable(
   ${PROJECT_NAME}
-  test.cpp
+  vector_test.cpp
+  list_test.cpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)

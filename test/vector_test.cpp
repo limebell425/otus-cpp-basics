@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <memory>
-#include <vector>
 
 TEST(Vector, EmptyConstructorTest)
 {
@@ -61,19 +60,22 @@ TEST_F(VectorTest, PushBackRealloc)
     EXPECT_EQ(vec3.capacity(), 6);
 }
 
-TEST_F(VectorTest, InsertInEmptyVector)
+TEST_F(VectorTest, InsertInBeginEmptyVector)
+{
+    int val = 5;
+    vec1.insert(vec1.begin(), val);
+    EXPECT_EQ(vec1[0], val);
+    EXPECT_EQ(vec1.size(), 1);
+    EXPECT_EQ(vec1.capacity(), 1);
+}
+
+TEST_F(VectorTest, InsertInEndEmptyVector)
 {
     int val = 5;
     vec1.insert(vec1.end(), val);
     EXPECT_EQ(vec1[0], val);
     EXPECT_EQ(vec1.size(), 1);
     EXPECT_EQ(vec1.capacity(), 1);
-
-    MyVector<int> vec4;
-    vec4.insert(vec4.begin(), val);
-    EXPECT_EQ(vec4[0], val);
-    EXPECT_EQ(vec4.size(), 1);
-    EXPECT_EQ(vec4.capacity(), 1);
 }
 
 TEST_F(VectorTest, InsertBeginNotRealloc)

@@ -3,6 +3,8 @@
 #include <memory>
 #include <cstddef>
 #include <utility>
+#include <algorithm>
+#include <stdexcept>
 
 template <typename T>
 class MyList
@@ -70,6 +72,13 @@ public:
         {
             if (this == &other)
                 return *this;
+            
+            if (other.empty())
+            {
+                size_ = 0;
+                first = nullptr;
+                return *this;
+            }
 
             Node *p = other.first.get();
             Node *prev_node = nullptr;
@@ -109,13 +118,28 @@ public:
             size_ = std::exchange(other.size_, 0);
             return *this;
         }
+
         MyList(MyList &&other)
         {
             *this = std::move(other);
         }
-        bool empty();
-        size_t size();
-        void push_back(const T &value); 
+
+        bool operator==(const MyList &other) const
+        {
+            if (size() != other.size())
+            {
+                return false;
+            }
+            return (std::mismatch(begin(), end(), other.begin(), other.end()) == std::pair{end(), other.end()});
+        }
+    
+        bool operator!=(const MyList &other) const
+        {
+            return !(*this == other);
+        }
+
+        bool empty() const;
+        size_t size() const;
         void erase(const Iterator<T> &it);
         Iterator<T> begin() {return Iterator<T>{first.get()}; }
         Iterator<T> end() {return Iterator<T>{last}; }
@@ -128,6 +152,8 @@ public:
         void push_back(U &&value);
         template<typename U>
         void insert(const Iterator<T> &it, U &&value);
+
+        using value_type = T;
        
     private:
         std::unique_ptr<Node> first;
@@ -136,13 +162,13 @@ public:
 };
 
 template<typename T>
-bool MyList<T>::empty()
+bool MyList<T>::empty() const
 {
     return first == nullptr;
 }
 
 template<typename T>
-size_t MyList<T>::size()
+size_t MyList<T>::size() const
 {
     return size_;
 }
@@ -170,23 +196,43 @@ void MyList<T>::push_back(U &&value)
 template <typename T>
 T &MyList<T>::operator[](size_t index)
 {
+    if (empty())
+    {
+        throw std::out_of_range("Out of range in MyList operator[]");
+    }
+
+    if (index > (size()-1))
+    {
+        throw std::out_of_range("Out of range in MyList operator[]");
+    }
+
     return *std::next(begin(), index);
 }
 
 template <typename T>
 const T &MyList<T>::operator[](size_t index) const
 {
+    if (empty())
+    {
+        throw std::out_of_range("Out of range in MyList operator[]");
+    }
+
+    if (index > (size()-1))
+    {
+        throw std::out_of_range("Out of range in MyList operator[]");
+    }
+
     return *std::next(begin(), index);
 }
 
 template <typename T>
 void MyList<T>::erase(const Iterator<T> &it)
 {
-    if (empty() || it == end())
+    if (empty())
     {
-        return;
+        throw(std::out_of_range("Out Of Range in MyList Erase"));
     }
-        
+
     if (size() == 1)
     {
         --size_;
@@ -194,11 +240,22 @@ void MyList<T>::erase(const Iterator<T> &it)
         return;
     }
 
+
     --size_;
     if (it == begin())
     {
         first = std::move(it.node->next);
         first->prev = nullptr;
+        return;
+    }
+    if (it == end())
+    {
+        Iterator<T> it2 = end();
+        --it2;
+        Node *p1 = it2.node->prev;
+        std::unique_ptr<Node> p2 = std::move(it2.node->next);
+        p2->prev = p1;
+        p1->next = std::move(p2);
         return;
     }
     Node *p1 = it.node->prev;
